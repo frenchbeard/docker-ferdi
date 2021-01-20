@@ -1,0 +1,2 @@
+- Find a way to make dbus work without granting too much privileges
+- Reduce number of dependencies (die and retry, gonna take some time)

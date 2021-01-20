@@ -15,13 +15,16 @@ all: build
 help:
 	@echo Usage :
 	@echo ----
-	@echo make build        - build the ferdi image
-	@echo make tag_latest   - tag the latest build \"latest\"
-	@echo make release      - release the latest build on docker hub
-	@echo make quickstart   - start ferdi with current ${USER}\'s profile
-	@echo make stop         - stop ferdi
-	@echo make logs         - view logs
-	@echo make purge        - stop and remove the container
+	@echo make build			- build the ferdi image
+	@echo make build_nocache	- build the ferdi image, ignoring cache
+	@echo make init 			- creates required profile folder, Docker volume as well as authorizes X acces
+	@echo make logs				- view logs
+	@echo make purge			- stop and remove the container
+	@echo make release			- release the latest build on docker hub
+	@echo make run				- start ferdi with current user\'s profile
+	@echo make shell 			- start ferdi container, and drops in a shell (without running ferdi)
+	@echo make stop				- stop ferdi
+	@echo make tag_latest		- tag the latest build \"latest\"
 
 build:
 	docker build -t $(NAME):$(VERSION) --rm .
@@ -35,44 +38,40 @@ tag_latest:
 release: build tag_latest
 	docker push $(NAME):$(VERSION)
 
-quickstart:
+run: init
+	@echo Configuring xhost...
+	@xhost +local:
 	@echo Starting ferdi container...
-	@echo docker run --rm -d\
-		-v /etc/localtime:/etc/localtime:ro \
-		-v /tmp/.X11-unix:/tmp/.X11-unix \
-		-e DISPLAY=${DISPLAY} \
-		--device /dev/snd \
-		--device /dev/dri \
-		-v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi" \
-		-v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
-		--ipc="host" \
-		--name ferdi-demo \
-		$(NAME):$(VERSION)
 	docker run --rm -d \
 		-v /etc/localtime:/etc/localtime:ro \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
 		-e DISPLAY=${DISPLAY} \
 		--device /dev/snd \
 		--device /dev/dri \
+		-v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi"  \
+		-v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
+		--ipc="host" \
+		--name ferdi \
+		$(NAME):$(VERSION)
+
+
+debug:
+	@echo Starting ferdi container in the foreground...
+	docker run -it \
+		-v /etc/localtime:/etc/localtime:ro \
+		-v /tmp/.X11-unix:/tmp/.X11-unix \
+		-v /var/run/dbus:/var/run/dbus \
+		-e DISPLAY=${DISPLAY} \
+		--device /dev/snd \
+		--device /dev/dri \
 		-v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi" \
 		-v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
 		--ipc="host" \
-		--name ferdi-demo \
+		--name ferdi \
 		$(NAME):$(VERSION)
 
 shell:
 	@echo "Starting ferdi container..."
-	@echo docker run --rm -it \
-		-v /etc/localtime:/etc/localtime:ro \
-		-v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi" \
-		-v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
-		-v /tmp/.X11-unix:/tmp/.X11-unix \
-		-e DISPLAY=unix${DISPLAY} \
-		--device /dev/snd \
-		--device /dev/dri \
-		--ipc="host" \
-		--name ferdi-demo \
-		$(NAME):$(VERSION) bash
 	docker run -it \
 		-v /etc/localtime:/etc/localtime:ro \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -80,19 +79,18 @@ shell:
 		--device /dev/snd \
 		--device /dev/dri \
 		-v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
-		-v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi" \
+		-v  "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi"  \
 		--ipc="host" \
-		--name ferdi-demo \
+		--name ferdi \
 		$(NAME):$(VERSION) bash
-
 
 stop:
 	@echo "Stopping ferdi..."
-	@docker stop ferdi-demo
+	@docker stop ferdi
 
 purge: stop
 	@echo "Removing stopped containers..."
-	@docker rm -v ferdi-demo
+	@docker rm -v ferdi
 
 logs:
-	@docker logs -f ferdi-demo
+	@docker logs -f ferdi
