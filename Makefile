@@ -38,7 +38,7 @@ tag_latest:
 release: build tag_latest
 	docker push $(NAME):$(VERSION)
 
-run: init
+run:
 	@echo Configuring xhost...
 	@xhost +local:
 	@echo Starting ferdi container...
