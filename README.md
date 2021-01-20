@@ -12,12 +12,11 @@ git clone https://github.com/frenchbeard/docker-fredi
 cd docker-ferdi
 make
 
-# Prepare required folder, if never run
-mkdir -p ~/.config/Ferdi
 # Allow local non-network connection to X server
 xhost +local:
 
 # Run it using your existing profile
+make run
 ```
 
 ## Prerequisites
@@ -78,18 +77,18 @@ The `run` target makes the required changes for current user :
 It then runs the container, with the following options.
 
 ```shell
-[user@host](docker-ferdi)$ make
+[user@host](docker-ferdi)$ make run
 Configuring xhost...
 xhost +local:
 Starting ferdi container...
 docker run --rm -d \
     -v /etc/localtime:/etc/localtime:ro \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -e DISPLAY=${DISPLAY} \
+    -e DISPLAY=:0 \
     --device /dev/snd \
     --device /dev/dri \
-    -v "${HOME}/.config/Ferdi:/home/ferdi/.config/Ferdi"  \
-    -v "${HOME}/.Xauthority:/home/ferdi/.Xauthority" \
+    -v "/home/user/.config/Ferdi:/home/ferdi/.config/Ferdi"  \
+    -v "/home/user/.Xauthority:/home/ferdi/.Xauthority" \
     --ipc="host" \
     --name ferdi \
     user/ferdi:5.6.0-beta.5
@@ -136,9 +135,11 @@ ferdi@7682c8eb0fb8:~$
 # Why ?
 
 Because we can, obviously. Still, even though service hibernation helps reduce
-memory usage, it doesn’t prevent it from going overboard sometimes. Here you
+memory usage, it dœsn’t prevent it from going overboard sometimes. Here you
 can simply limit it in your run command, through the
 [-m](https://docs.docker.com/config/containers/resource_constraints/) option.
+
+Feel free to add the required configuration to the `Makefile`.
 
 # Credits
 
